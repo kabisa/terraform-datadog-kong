@@ -69,6 +69,3 @@ variable "system_entropy_priority" {
   type    = number
   default = 3
 }
-
-# "avg(last_5m):min:system.entropy.available{tme.kong:true AND cluster_name IN (tme-dmz,tme-prd,tme-fargate-prd)} by {cluster_name,host} < 250"
-# "avg(last_15m):min:system.entropy.available{short_image:kong-enterprise-edition,cluster_name:tme-prd} by {host,cluster_name} <= 250"
