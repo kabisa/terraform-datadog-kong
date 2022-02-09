@@ -1,9 +1,41 @@
 
 ![Datadog](https://imgix.datadoghq.com/img/about/presskit/logo-v/dd_vertical_purple.png)
 
-[//]: # (This file is generated. Do not edit)
+[//]: # (This file is generated. Do not edit, module description can be added by editing / creating module_description.md)
 
 # Terraform module for Datadog Kong
+
+This module can be used to monitor the Kong system, modules have been build based on advice we've got from Kong.
+Not in scope (yet?) are monitors for the applications hosted behind Kong.
+It also has the option to monitor the docker containers with the embedded [docker module](https://registry.terraform.io/modules/kabisa/docker-container/datadog/latest)
+
+This module is part of a larger suite of modules that provide alerts in Datadog.
+Other modules can be found on the [Terraform Registry](https://registry.terraform.io/search/modules?namespace=kabisa&provider=datadog)
+
+We have two base modules we use to standardise development of our Monitor Modules:
+- [generic monitor](https://github.com/kabisa/terraform-datadog-generic-monitor) Used in 90% of our alerts
+- [service check monitor](https://github.com/kabisa/terraform-datadog-service-check-monitor)
+
+Modules are generated with this tool: https://github.com/kabisa/datadog-terraform-generator
+
+# Example Usage
+
+```terraform
+module "kong" {
+  source = "kabisa/kong/datadog"
+
+  notification_channel = "mail@example.com"
+  service              = "Kong"
+  env                  = "prd"
+  filter_str           = "cluster_name:kong"
+  service_check_include_tags = [
+    "cluster_name:kong",
+  ]
+
+  runs_in_k8s                         = true
+  docker_container_monitoring_enabled = true
+}
+```
 
 Monitors:
 * [Terraform module for Datadog Kong](#terraform-module-for-datadog-kong)
@@ -22,7 +54,7 @@ Monitors:
   * [Connections Waiting High](#connections-waiting-high)
   * [Module Variables](#module-variables)
 
-# Getting started
+# Getting started developing
 [pre-commit](http://pre-commit.com/) was used to do Terraform linting and validating.
 
 Steps:
@@ -34,7 +66,7 @@ Steps:
 
 Query:
 ```terraform
-avg(${var.dns_response_time_google_evaluation_period}):avg:dns.response_time{${local.dns_response_time_google_filter}} by {host,cluster_name} > ${var.dns_response_time_google_critical}
+avg(last_5m):avg:dns.response_time{tag:xxx} by {host,cluster_name} > 2
 ```
 
 | variable                                   | default  | required | description                      |
@@ -47,9 +79,9 @@ avg(${var.dns_response_time_google_evaluation_period}):avg:dns.response_time{${l
 | dns_response_time_google_docs              | ""       | No       |                                  |
 | dns_response_time_google_filter_override   | ""       | No       |                                  |
 | dns_response_time_google_alerting_enabled  | True     | No       |                                  |
-| dns_response_time_google_no_data_timeframe | null     | No       |                                  |
+| dns_response_time_google_no_data_timeframe | None     | No       |                                  |
 | dns_response_time_google_notify_no_data    | False    | No       |                                  |
-| dns_response_time_google_ok_threshold      | null     | No       |                                  |
+| dns_response_time_google_ok_threshold      | None     | No       |                                  |
 | dns_response_time_google_name_prefix       | ""       | No       |                                  |
 | dns_response_time_google_name_suffix       | ""       | No       |                                  |
 | dns_response_time_google_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -59,7 +91,7 @@ avg(${var.dns_response_time_google_evaluation_period}):avg:dns.response_time{${l
 
 Query:
 ```terraform
-avg(${var.swap_percent_free_evaluation_period}):min:system.swap.pct_free{${local.swap_percent_free_filter}} by {host,cluster_name} * 100 < ${var.swap_percent_free_critical}
+avg(last_5m):min:system.swap.pct_free{tag:xxx} by {host,cluster_name} * 100 < 10
 ```
 
 | variable                            | default  | required | description                      |
@@ -72,9 +104,9 @@ avg(${var.swap_percent_free_evaluation_period}):min:system.swap.pct_free{${local
 | swap_percent_free_docs              | ""       | No       |                                  |
 | swap_percent_free_filter_override   | ""       | No       |                                  |
 | swap_percent_free_alerting_enabled  | True     | No       |                                  |
-| swap_percent_free_no_data_timeframe | null     | No       |                                  |
+| swap_percent_free_no_data_timeframe | None     | No       |                                  |
 | swap_percent_free_notify_no_data    | False    | No       |                                  |
-| swap_percent_free_ok_threshold      | null     | No       |                                  |
+| swap_percent_free_ok_threshold      | None     | No       |                                  |
 | swap_percent_free_name_prefix       | ""       | No       |                                  |
 | swap_percent_free_name_suffix       | ""       | No       |                                  |
 | swap_percent_free_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -84,7 +116,7 @@ avg(${var.swap_percent_free_evaluation_period}):min:system.swap.pct_free{${local
 
 Query:
 ```terraform
-sum(${var.error_response_percentage_evaluation_period}):${local.error_count} * 100 / (${local.success_count} + ${local.error_count} + ${var.error_response_percentage_offset}) > ${var.error_response_percentage_critical}
+sum(last_30m):${local.error_count} * 100 / (${local.success_count} + ${local.error_count} + ${var.error_response_percentage_offset}) > 3
 ```
 
 | variable                                    | default  | required | description                                                                                          |
@@ -98,9 +130,9 @@ sum(${var.error_response_percentage_evaluation_period}):${local.error_count} * 1
 | error_response_percentage_docs              | ""       | No       |                                                                                                      |
 | error_response_percentage_filter_override   | ""       | No       |                                                                                                      |
 | error_response_percentage_alerting_enabled  | True     | No       |                                                                                                      |
-| error_response_percentage_no_data_timeframe | null     | No       |                                                                                                      |
+| error_response_percentage_no_data_timeframe | None     | No       |                                                                                                      |
 | error_response_percentage_notify_no_data    | False    | No       |                                                                                                      |
-| error_response_percentage_ok_threshold      | null     | No       |                                                                                                      |
+| error_response_percentage_ok_threshold      | None     | No       |                                                                                                      |
 | error_response_percentage_name_prefix       | ""       | No       |                                                                                                      |
 | error_response_percentage_name_suffix       | ""       | No       |                                                                                                      |
 | error_response_percentage_priority          | 3        | No       | Number from 1 (high) to 5 (low).                                                                     |
@@ -127,7 +159,7 @@ Returns CRITICAL if Datadog is agent is not running or reporting data for %d min
 
 Query:
 ```terraform
-avg(${var.active_connections_low_evaluation_period}):sum:kong.connections_active{${local.active_connections_low_filter}} by {cluster_name} < ${var.active_connections_low_critical}
+avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} < 2
 ```
 
 | variable                                 | default  | required | description                      |
@@ -140,9 +172,9 @@ avg(${var.active_connections_low_evaluation_period}):sum:kong.connections_active
 | active_connections_low_docs              | ""       | No       |                                  |
 | active_connections_low_filter_override   | ""       | No       |                                  |
 | active_connections_low_alerting_enabled  | True     | No       |                                  |
-| active_connections_low_no_data_timeframe | null     | No       |                                  |
+| active_connections_low_no_data_timeframe | None     | No       |                                  |
 | active_connections_low_notify_no_data    | False    | No       |                                  |
-| active_connections_low_ok_threshold      | null     | No       |                                  |
+| active_connections_low_ok_threshold      | None     | No       |                                  |
 | active_connections_low_name_prefix       | ""       | No       |                                  |
 | active_connections_low_name_suffix       | ""       | No       |                                  |
 | active_connections_low_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -152,22 +184,22 @@ avg(${var.active_connections_low_evaluation_period}):sum:kong.connections_active
 
 Query:
 ```terraform
-avg(${var.db_connectivity_evaluation_period}):avg:network.tcp.can_connect{${local.db_connectivity_filter}} by {host,cluster_name} <= ${var.db_connectivity_critical}
+avg(last_10m):avg:network.tcp.can_connect{tag:xxx} by {host,cluster_name} <= 0.5
 ```
 
 | variable                          | default  | required | description                      |
 |-----------------------------------|----------|----------|----------------------------------|
 | db_connectivity_enabled           | True     | No       |                                  |
-| db_connectivity_warning           | null     | No       |                                  |
+| db_connectivity_warning           | None     | No       |                                  |
 | db_connectivity_critical          | 0.5      | No       |                                  |
 | db_connectivity_evaluation_period | last_10m | No       |                                  |
 | db_connectivity_note              | ""       | No       |                                  |
 | db_connectivity_docs              | ""       | No       |                                  |
 | db_connectivity_filter_override   | ""       | No       |                                  |
 | db_connectivity_alerting_enabled  | True     | No       |                                  |
-| db_connectivity_no_data_timeframe | null     | No       |                                  |
+| db_connectivity_no_data_timeframe | None     | No       |                                  |
 | db_connectivity_notify_no_data    | False    | No       |                                  |
-| db_connectivity_ok_threshold      | null     | No       |                                  |
+| db_connectivity_ok_threshold      | None     | No       |                                  |
 | db_connectivity_name_prefix       | ""       | No       |                                  |
 | db_connectivity_name_suffix       | ""       | No       |                                  |
 | db_connectivity_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -177,7 +209,7 @@ avg(${var.db_connectivity_evaluation_period}):avg:network.tcp.can_connect{${loca
 
 Query:
 ```terraform
-avg(${var.dns_response_time_evaluation_period}):avg:dns.response_time{${local.dns_response_time_filter}} by {host} > ${var.dns_response_time_critical}
+avg(last_5m):avg:dns.response_time{tag:xxx} by {host} > 1
 ```
 
 | variable                            | default  | required | description                      |
@@ -190,9 +222,9 @@ avg(${var.dns_response_time_evaluation_period}):avg:dns.response_time{${local.dn
 | dns_response_time_docs              | ""       | No       |                                  |
 | dns_response_time_filter_override   | ""       | No       |                                  |
 | dns_response_time_alerting_enabled  | True     | No       |                                  |
-| dns_response_time_no_data_timeframe | null     | No       |                                  |
+| dns_response_time_no_data_timeframe | None     | No       |                                  |
 | dns_response_time_notify_no_data    | False    | No       |                                  |
-| dns_response_time_ok_threshold      | null     | No       |                                  |
+| dns_response_time_ok_threshold      | None     | No       |                                  |
 | dns_response_time_name_prefix       | ""       | No       |                                  |
 | dns_response_time_name_suffix       | ""       | No       |                                  |
 | dns_response_time_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -202,7 +234,7 @@ avg(${var.dns_response_time_evaluation_period}):avg:dns.response_time{${local.dn
 
 Query:
 ```terraform
-avg(${var.ntp_drift_evaluation_period}):abs(avg:ntp.offset{${local.ntp_drift_filter}} by {host,cluster_name}) > ${var.ntp_drift_critical}
+avg(last_15m):abs(avg:ntp.offset{tag:xxx} by {host,cluster_name}) > 30
 ```
 
 | variable                    | default  | required | description                      |
@@ -215,9 +247,9 @@ avg(${var.ntp_drift_evaluation_period}):abs(avg:ntp.offset{${local.ntp_drift_fil
 | ntp_drift_docs              | ""       | No       |                                  |
 | ntp_drift_filter_override   | ""       | No       |                                  |
 | ntp_drift_alerting_enabled  | True     | No       |                                  |
-| ntp_drift_no_data_timeframe | null     | No       |                                  |
+| ntp_drift_no_data_timeframe | None     | No       |                                  |
 | ntp_drift_notify_no_data    | False    | No       |                                  |
-| ntp_drift_ok_threshold      | null     | No       |                                  |
+| ntp_drift_ok_threshold      | None     | No       |                                  |
 | ntp_drift_name_prefix       | ""       | No       |                                  |
 | ntp_drift_name_suffix       | ""       | No       |                                  |
 | ntp_drift_priority          | 2        | No       | Number from 1 (high) to 5 (low). |
@@ -256,9 +288,9 @@ avg(${var.disk_free_percent_evaluation_period}):100 * min:system.disk.free{${loc
 | disk_free_percent_docs              | ""       | No       |                                  |
 | disk_free_percent_filter_override   | ""       | No       |                                  |
 | disk_free_percent_alerting_enabled  | True     | No       |                                  |
-| disk_free_percent_no_data_timeframe | null     | No       |                                  |
+| disk_free_percent_no_data_timeframe | None     | No       |                                  |
 | disk_free_percent_notify_no_data    | False    | No       |                                  |
-| disk_free_percent_ok_threshold      | null     | No       |                                  |
+| disk_free_percent_ok_threshold      | None     | No       |                                  |
 | disk_free_percent_name_prefix       | ""       | No       |                                  |
 | disk_free_percent_name_suffix       | ""       | No       |                                  |
 | disk_free_percent_priority          | 2        | No       | Number from 1 (high) to 5 (low). |
@@ -270,7 +302,7 @@ Entropy is the randomness collected by an operating system or application for us
 
 Query:
 ```terraform
-avg(${var.system_entropy_evaluation_period}):min:system.entropy.available{${local.system_entropy_filter}} by {host,cluster_name} < ${var.system_entropy_critical}
+avg(last_15m):min:system.entropy.available{tag:xxx} by {host,cluster_name} < 250
 ```
 
 | variable                         | default                                  | required | description                      |
@@ -283,9 +315,9 @@ avg(${var.system_entropy_evaluation_period}):min:system.entropy.available{${loca
 | system_entropy_docs              | Entropy is the randomness collected by an operating system or application for use in cryptography or other uses that require random data. This randomness is often collected from hardware sources (variance in fan noise or HDD), either pre-existing ones such as mouse movements or specially provided randomness generators. A lack of entropy can have a negative impact on performance and security. | No       |                                  |
 | system_entropy_filter_override   | ""                                       | No       |                                  |
 | system_entropy_alerting_enabled  | True                                     | No       |                                  |
-| system_entropy_no_data_timeframe | null                                     | No       |                                  |
+| system_entropy_no_data_timeframe | None                                     | No       |                                  |
 | system_entropy_notify_no_data    | False                                    | No       |                                  |
-| system_entropy_ok_threshold      | null                                     | No       |                                  |
+| system_entropy_ok_threshold      | None                                     | No       |                                  |
 | system_entropy_name_prefix       | ""                                       | No       |                                  |
 | system_entropy_name_suffix       | ""                                       | No       |                                  |
 | system_entropy_priority          | 3                                        | No       | Number from 1 (high) to 5 (low). |
@@ -295,7 +327,7 @@ avg(${var.system_entropy_evaluation_period}):min:system.entropy.available{${loca
 
 Query:
 ```terraform
-avg(${var.active_connections_high_evaluation_period}):sum:kong.connections_active{${local.active_connections_high_filter}} by {cluster_name} > ${var.active_connections_high_critical}
+avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} > 2000
 ```
 
 | variable                                  | default  | required | description                      |
@@ -308,9 +340,9 @@ avg(${var.active_connections_high_evaluation_period}):sum:kong.connections_activ
 | active_connections_high_docs              | ""       | No       |                                  |
 | active_connections_high_filter_override   | ""       | No       |                                  |
 | active_connections_high_alerting_enabled  | True     | No       |                                  |
-| active_connections_high_no_data_timeframe | null     | No       |                                  |
+| active_connections_high_no_data_timeframe | None     | No       |                                  |
 | active_connections_high_notify_no_data    | False    | No       |                                  |
-| active_connections_high_ok_threshold      | null     | No       |                                  |
+| active_connections_high_ok_threshold      | None     | No       |                                  |
 | active_connections_high_name_prefix       | ""       | No       |                                  |
 | active_connections_high_name_suffix       | ""       | No       |                                  |
 | active_connections_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -320,7 +352,7 @@ avg(${var.active_connections_high_evaluation_period}):sum:kong.connections_activ
 
 Query:
 ```terraform
-avg(${var.connections_waiting_high_evaluation_period}):sum:kong.connections_waiting{${local.connections_waiting_high_filter}} by {cluster_name} > ${var.connections_waiting_high_critical}
+avg(last_10m):sum:kong.connections_waiting{tag:xxx} by {cluster_name} > 1000
 ```
 
 | variable                                   | default  | required | description                      |
@@ -333,9 +365,9 @@ avg(${var.connections_waiting_high_evaluation_period}):sum:kong.connections_wait
 | connections_waiting_high_docs              | ""       | No       |                                  |
 | connections_waiting_high_filter_override   | ""       | No       |                                  |
 | connections_waiting_high_alerting_enabled  | True     | No       |                                  |
-| connections_waiting_high_no_data_timeframe | null     | No       |                                  |
+| connections_waiting_high_no_data_timeframe | None     | No       |                                  |
 | connections_waiting_high_notify_no_data    | False    | No       |                                  |
-| connections_waiting_high_ok_threshold      | null     | No       |                                  |
+| connections_waiting_high_ok_threshold      | None     | No       |                                  |
 | connections_waiting_high_name_prefix       | ""       | No       |                                  |
 | connections_waiting_high_name_suffix       | ""       | No       |                                  |
 | connections_waiting_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
@@ -343,20 +375,20 @@ avg(${var.connections_waiting_high_evaluation_period}):sum:kong.connections_wait
 
 ## Module Variables
 
-| variable                            | default  | required | description                                                           |
-|-------------------------------------|----------|----------|-----------------------------------------------------------------------|
-| filter_str                          |          | Yes      |                                                                       |
-| env                                 |          | Yes      |                                                                       |
-| service                             | Kong     | No       |                                                                       |
-| notification_channel                |          | Yes      |                                                                       |
-| additional_tags                     | []       | No       |                                                                       |
-| locked                              | False    | No       |                                                                       |
-| name_prefix                         | ""       | No       |                                                                       |
-| name_suffix                         | ""       | No       |                                                                       |
-| service_check_include_tags          |          | Yes      | Tags to be included in the "over" section of a service check query    |
-| service_check_exclude_tags          | []       | No       | Tags to be included in the "exclude" section of a service check query |
-| docker_container_monitoring_enabled |          | Yes      |                                                                       |
-| docker_filter_str                   | null     | No       |                                                                       |
-| runs_in_k8s                         |          | Yes      |                                                                       |
+| variable                            | default  | required | description                                                             |
+|-------------------------------------|----------|----------|-------------------------------------------------------------------------|
+| filter_str                          |          | Yes      |                                                                         |
+| env                                 |          | Yes      |                                                                         |
+| service                             | Kong     | No       |                                                                         |
+| notification_channel                |          | Yes      |                                                                         |
+| additional_tags                     | []       | No       |                                                                         |
+| locked                              | False    | No       |                                                                         |
+| name_prefix                         | ""       | No       |                                                                         |
+| name_suffix                         | ""       | No       |                                                                         |
+| service_check_include_tags          |          | Yes      | Tags to be included in the \"over\" section of a service check query    |
+| service_check_exclude_tags          | []       | No       | Tags to be included in the \"exclude\" section of a service check query |
+| docker_container_monitoring_enabled |          | Yes      |                                                                         |
+| docker_filter_str                   | None     | No       |                                                                         |
+| runs_in_k8s                         |          | Yes      |                                                                         |
 
 
