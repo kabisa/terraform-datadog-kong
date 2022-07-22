@@ -7,7 +7,8 @@ locals {
 
 
 module "datadog_agent" {
-  source = "git@github.com:kabisa/terraform-datadog-service-check-monitor.git?ref=1.4.0"
+  source  = "kabisa/service-check-monitor/datadog"
+  version = "2.0.0"
 
   name                          = "Status of Kong Cluster Datadog Agent"
   metric_name                   = "datadog.agent.up"
@@ -27,7 +28,7 @@ module "datadog_agent" {
   enabled            = var.datadog_agent_enabled
   alerting_enabled   = var.datadog_agent_alerting_enabled
   critical_threshold = var.datadog_agent_critical
-  priority           = var.datadog_agent_priority
+  priority           = min(var.datadog_agent_priority + var.priority_offset, 5)
   # format the alert string, it shows the number of minutes we set the threshold to
   docs = format(var.datadog_agent_docs, var.datadog_agent_no_data_timeframe)
   note = var.datadog_agent_note

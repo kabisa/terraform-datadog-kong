@@ -1,6 +1,8 @@
 
 module "docker" {
-  source               = "git@github.com:kabisa/terraform-datadog-docker-container?ref=1.0.0"
+  source  = "kabisa/docker-container/datadog"
+  version = "2.0.1"
+
   count                = var.docker_container_monitoring_enabled ? 1 : 0
   runs_in_k8s          = var.runs_in_k8s
   env                  = var.env

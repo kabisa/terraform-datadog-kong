@@ -24,7 +24,7 @@ Modules are generated with this tool: https://github.com/kabisa/datadog-terrafor
 module "kong" {
   source = "kabisa/kong/datadog"
 
-  notification_channel = "mail@example.com"
+  notification_channel = "@mail@example.com"
   service              = "Kong"
   env                  = "prd"
   filter_str           = "cluster_name:kong"
@@ -35,32 +35,177 @@ module "kong" {
   runs_in_k8s                         = true
   docker_container_monitoring_enabled = true
 }
+
 ```
 
+
+[Module Variables](#module-variables)
+
 Monitors:
-* [Terraform module for Datadog Kong](#terraform-module-for-datadog-kong)
-  * [Dns Response Time Google](#dns-response-time-google)
-  * [Swap Percent Free](#swap-percent-free)
-  * [Error Response Percentage](#error-response-percentage)
-  * [Datadog Agent](#datadog-agent)
-  * [Active Connections Low](#active-connections-low)
-  * [Db Connectivity](#db-connectivity)
-  * [Dns Response Time](#dns-response-time)
-  * [Ntp Drift](#ntp-drift)
-  * [Integration](#integration)
-  * [Disk Space](#disk-space)
-  * [System Entropy](#system-entropy)
-  * [Active Connections High](#active-connections-high)
-  * [Connections Waiting High](#connections-waiting-high)
-  * [Module Variables](#module-variables)
+
+| Monitor name    | Default enabled | Priority | Query                  |
+|-----------------|------|----|------------------------|
+| [Active Connections High](#active-connections-high) | True | 3  | `avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} > 2000` |
+| [Active Connections Low](#active-connections-low) | True | 3  | `avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} < 2` |
+| [Connections Waiting High](#connections-waiting-high) | True | 3  | `avg(last_10m):sum:kong.connections_waiting{tag:xxx} by {cluster_name} > 1000` |
+| [Db Connectivity](#db-connectivity) | True | 3  | `avg(last_10m):avg:network.tcp.can_connect{tag:xxx} by {host,cluster_name} <= 0.5` |
+| [Disk Space](#disk-space) | True | 2  | `avg(${var.disk_free_percent_evaluation_period}):100 * min:system.disk.free{${local.disk_free_percent_filter}} by {host,device} / min:system.disk.total{${local.disk_free_percent_filter}} by {host,device} < ${var.disk_free_percent_critical}` |
+| [Dns Response Time Google](#dns-response-time-google) | True | 3  | `avg(last_5m):avg:dns.response_time{tag:xxx} by {host,cluster_name} > 2` |
+| [Dns Response Time](#dns-response-time) | True | 3  | `avg(last_5m):avg:dns.response_time{tag:xxx} by {host} > 1` |
+| [Error Response Percentage](#error-response-percentage) | True | 3  | `sum(last_30m):${local.error_count} * 100 / (${local.success_count} + ${local.error_count} + ${var.error_response_percentage_offset}) > 3` |
+| [Ntp Drift](#ntp-drift) | True | 2  | `avg(last_15m):abs(avg:ntp.offset{tag:xxx} by {host,cluster_name}) > 30` |
+| [Swap Percent Free](#swap-percent-free) | True | 3  | `avg(last_5m):min:system.swap.pct_free{tag:xxx} by {host,cluster_name} * 100 < 10` |
+| [System Entropy](#system-entropy) | True | 3  | `avg(last_15m):min:system.entropy.available{tag:xxx} by {host,cluster_name} < 250` |
 
 # Getting started developing
 [pre-commit](http://pre-commit.com/) was used to do Terraform linting and validating.
 
 Steps:
    - Install [pre-commit](http://pre-commit.com/). E.g. `brew install pre-commit`.
-   - Run `pre-commit install` in this repo. (Every time you cloud a repo with pre-commit enabled you will need to run the pre-commit install command)
+   - Run `pre-commit install` in this repo. (Every time you clone a repo with pre-commit enabled you will need to run the pre-commit install command)
    - That’s it! Now every time you commit a code change (`.tf` file), the hooks in the `hooks:` config `.pre-commit-config.yaml` will execute.
+
+## Active Connections High
+
+Query:
+```terraform
+avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} > 2000
+```
+
+| variable                                  | default  | required | description                      |
+|-------------------------------------------|----------|----------|----------------------------------|
+| active_connections_high_enabled           | True     | No       |                                  |
+| active_connections_high_warning           | 1500     | No       |                                  |
+| active_connections_high_critical          | 2000     | No       |                                  |
+| active_connections_high_evaluation_period | last_10m | No       |                                  |
+| active_connections_high_note              | ""       | No       |                                  |
+| active_connections_high_docs              | ""       | No       |                                  |
+| active_connections_high_filter_override   | ""       | No       |                                  |
+| active_connections_high_alerting_enabled  | True     | No       |                                  |
+| active_connections_high_no_data_timeframe | None     | No       |                                  |
+| active_connections_high_notify_no_data    | False    | No       |                                  |
+| active_connections_high_ok_threshold      | None     | No       |                                  |
+| active_connections_high_name_prefix       | ""       | No       |                                  |
+| active_connections_high_name_suffix       | ""       | No       |                                  |
+| active_connections_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+
+
+## Active Connections Low
+
+Query:
+```terraform
+avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} < 2
+```
+
+| variable                                 | default  | required | description                      |
+|------------------------------------------|----------|----------|----------------------------------|
+| active_connections_low_enabled           | True     | No       |                                  |
+| active_connections_low_warning           | 5        | No       |                                  |
+| active_connections_low_critical          | 2        | No       |                                  |
+| active_connections_low_evaluation_period | last_10m | No       |                                  |
+| active_connections_low_note              | ""       | No       |                                  |
+| active_connections_low_docs              | ""       | No       |                                  |
+| active_connections_low_filter_override   | ""       | No       |                                  |
+| active_connections_low_alerting_enabled  | True     | No       |                                  |
+| active_connections_low_no_data_timeframe | None     | No       |                                  |
+| active_connections_low_notify_no_data    | False    | No       |                                  |
+| active_connections_low_ok_threshold      | None     | No       |                                  |
+| active_connections_low_name_prefix       | ""       | No       |                                  |
+| active_connections_low_name_suffix       | ""       | No       |                                  |
+| active_connections_low_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+
+
+## Connections Waiting High
+
+Query:
+```terraform
+avg(last_10m):sum:kong.connections_waiting{tag:xxx} by {cluster_name} > 1000
+```
+
+| variable                                   | default  | required | description                      |
+|--------------------------------------------|----------|----------|----------------------------------|
+| connections_waiting_high_enabled           | True     | No       |                                  |
+| connections_waiting_high_warning           | 750      | No       |                                  |
+| connections_waiting_high_critical          | 1000     | No       |                                  |
+| connections_waiting_high_evaluation_period | last_10m | No       |                                  |
+| connections_waiting_high_note              | ""       | No       |                                  |
+| connections_waiting_high_docs              | ""       | No       |                                  |
+| connections_waiting_high_filter_override   | ""       | No       |                                  |
+| connections_waiting_high_alerting_enabled  | True     | No       |                                  |
+| connections_waiting_high_no_data_timeframe | None     | No       |                                  |
+| connections_waiting_high_notify_no_data    | False    | No       |                                  |
+| connections_waiting_high_ok_threshold      | None     | No       |                                  |
+| connections_waiting_high_name_prefix       | ""       | No       |                                  |
+| connections_waiting_high_name_suffix       | ""       | No       |                                  |
+| connections_waiting_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+
+
+## Datadog Agent
+
+Returns CRITICAL if Datadog is agent is not running or reporting data for %d minutes
+
+| variable                        | default                                  | required | description                                                              |
+|---------------------------------|------------------------------------------|----------|--------------------------------------------------------------------------|
+| datadog_agent_enabled           | True                                     | No       |                                                                          |
+| datadog_agent_critical          | 1                                        | No       |                                                                          |
+| datadog_agent_evaluation_period | last(2)                                  | No       |                                                                          |
+| datadog_agent_priority          | 2                                        | No       |                                                                          |
+| datadog_agent_note              | ""                                       | No       |                                                                          |
+| datadog_agent_docs              | Returns CRITICAL if Datadog is agent is not running or reporting data for %d minutes | No       |                                                                          |
+| datadog_agent_filter_override   | ""                                       | No       |                                                                          |
+| datadog_agent_alerting_enabled  | True                                     | No       |                                                                          |
+| datadog_agent_no_data_timeframe | 2                                        | No       | Timeframe in minutes after which we send alerts if a host is unavailable |
+
+
+## Db Connectivity
+
+Query:
+```terraform
+avg(last_10m):avg:network.tcp.can_connect{tag:xxx} by {host,cluster_name} <= 0.5
+```
+
+| variable                          | default  | required | description                      |
+|-----------------------------------|----------|----------|----------------------------------|
+| db_connectivity_enabled           | True     | No       |                                  |
+| db_connectivity_warning           | None     | No       |                                  |
+| db_connectivity_critical          | 0.5      | No       |                                  |
+| db_connectivity_evaluation_period | last_10m | No       |                                  |
+| db_connectivity_note              | ""       | No       |                                  |
+| db_connectivity_docs              | ""       | No       |                                  |
+| db_connectivity_filter_override   | ""       | No       |                                  |
+| db_connectivity_alerting_enabled  | True     | No       |                                  |
+| db_connectivity_no_data_timeframe | None     | No       |                                  |
+| db_connectivity_notify_no_data    | False    | No       |                                  |
+| db_connectivity_ok_threshold      | None     | No       |                                  |
+| db_connectivity_name_prefix       | ""       | No       |                                  |
+| db_connectivity_name_suffix       | ""       | No       |                                  |
+| db_connectivity_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+
+
+## Disk Space
+
+Query:
+```terraform
+avg(${var.disk_free_percent_evaluation_period}):100 * min:system.disk.free{${local.disk_free_percent_filter}} by {host,device} / min:system.disk.total{${local.disk_free_percent_filter}} by {host,device} < ${var.disk_free_percent_critical}
+```
+
+| variable                            | default  | required | description                      |
+|-------------------------------------|----------|----------|----------------------------------|
+| disk_free_percent_enabled           | True     | No       |                                  |
+| disk_free_percent_warning           | 20       | No       |                                  |
+| disk_free_percent_critical          | 15       | No       |                                  |
+| disk_free_percent_evaluation_period | last_15m | No       |                                  |
+| disk_free_percent_note              | ""       | No       |                                  |
+| disk_free_percent_docs              | ""       | No       |                                  |
+| disk_free_percent_filter_override   | ""       | No       |                                  |
+| disk_free_percent_alerting_enabled  | True     | No       |                                  |
+| disk_free_percent_no_data_timeframe | None     | No       |                                  |
+| disk_free_percent_notify_no_data    | False    | No       |                                  |
+| disk_free_percent_ok_threshold      | None     | No       |                                  |
+| disk_free_percent_name_prefix       | ""       | No       |                                  |
+| disk_free_percent_name_suffix       | ""       | No       |                                  |
+| disk_free_percent_priority          | 2        | No       | Number from 1 (high) to 5 (low). |
+
 
 ## Dns Response Time Google
 
@@ -87,29 +232,29 @@ avg(last_5m):avg:dns.response_time{tag:xxx} by {host,cluster_name} > 2
 | dns_response_time_google_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
 
 
-## Swap Percent Free
+## Dns Response Time
 
 Query:
 ```terraform
-avg(last_5m):min:system.swap.pct_free{tag:xxx} by {host,cluster_name} * 100 < 10
+avg(last_5m):avg:dns.response_time{tag:xxx} by {host} > 1
 ```
 
 | variable                            | default  | required | description                      |
 |-------------------------------------|----------|----------|----------------------------------|
-| swap_percent_free_enabled           | True     | No       |                                  |
-| swap_percent_free_warning           | 25       | No       |                                  |
-| swap_percent_free_critical          | 10       | No       |                                  |
-| swap_percent_free_evaluation_period | last_5m  | No       |                                  |
-| swap_percent_free_note              | ""       | No       |                                  |
-| swap_percent_free_docs              | ""       | No       |                                  |
-| swap_percent_free_filter_override   | ""       | No       |                                  |
-| swap_percent_free_alerting_enabled  | True     | No       |                                  |
-| swap_percent_free_no_data_timeframe | None     | No       |                                  |
-| swap_percent_free_notify_no_data    | False    | No       |                                  |
-| swap_percent_free_ok_threshold      | None     | No       |                                  |
-| swap_percent_free_name_prefix       | ""       | No       |                                  |
-| swap_percent_free_name_suffix       | ""       | No       |                                  |
-| swap_percent_free_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+| dns_response_time_enabled           | True     | No       |                                  |
+| dns_response_time_warning           | 0.75     | No       |                                  |
+| dns_response_time_critical          | 1        | No       |                                  |
+| dns_response_time_evaluation_period | last_5m  | No       |                                  |
+| dns_response_time_note              | ""       | No       |                                  |
+| dns_response_time_docs              | ""       | No       |                                  |
+| dns_response_time_filter_override   | ""       | No       |                                  |
+| dns_response_time_alerting_enabled  | True     | No       |                                  |
+| dns_response_time_no_data_timeframe | None     | No       |                                  |
+| dns_response_time_notify_no_data    | False    | No       |                                  |
+| dns_response_time_ok_threshold      | None     | No       |                                  |
+| dns_response_time_name_prefix       | ""       | No       |                                  |
+| dns_response_time_name_suffix       | ""       | No       |                                  |
+| dns_response_time_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
 
 
 ## Error Response Percentage
@@ -138,96 +283,21 @@ sum(last_30m):${local.error_count} * 100 / (${local.success_count} + ${local.err
 | error_response_percentage_priority          | 3        | No       | Number from 1 (high) to 5 (low).                                                                     |
 
 
-## Datadog Agent
+## Integration
 
-Returns CRITICAL if Datadog is agent is not running or reporting data for %d minutes
+Returns CRITICAL if Datadog is unable to connect to the monitored Kong instance(s). Returns OK otherwise.
 
-| variable                        | default                                  | required | description                                                              |
-|---------------------------------|------------------------------------------|----------|--------------------------------------------------------------------------|
-| datadog_agent_enabled           | True                                     | No       |                                                                          |
-| datadog_agent_critical          | 1                                        | No       |                                                                          |
-| datadog_agent_evaluation_period | last(2)                                  | No       |                                                                          |
-| datadog_agent_priority          | 2                                        | No       |                                                                          |
-| datadog_agent_note              | ""                                       | No       |                                                                          |
-| datadog_agent_docs              | Returns CRITICAL if Datadog is agent is not running or reporting data for %d minutes | No       |                                                                          |
-| datadog_agent_filter_override   | ""                                       | No       |                                                                          |
-| datadog_agent_alerting_enabled  | True                                     | No       |                                                                          |
-| datadog_agent_no_data_timeframe | 2                                        | No       | Timeframe in minutes after which we send alerts if a host is unavailable |
-
-
-## Active Connections Low
-
-Query:
-```terraform
-avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} < 2
-```
-
-| variable                                 | default  | required | description                      |
-|------------------------------------------|----------|----------|----------------------------------|
-| active_connections_low_enabled           | True     | No       |                                  |
-| active_connections_low_warning           | 5        | No       |                                  |
-| active_connections_low_critical          | 2        | No       |                                  |
-| active_connections_low_evaluation_period | last_10m | No       |                                  |
-| active_connections_low_note              | ""       | No       |                                  |
-| active_connections_low_docs              | ""       | No       |                                  |
-| active_connections_low_filter_override   | ""       | No       |                                  |
-| active_connections_low_alerting_enabled  | True     | No       |                                  |
-| active_connections_low_no_data_timeframe | None     | No       |                                  |
-| active_connections_low_notify_no_data    | False    | No       |                                  |
-| active_connections_low_ok_threshold      | None     | No       |                                  |
-| active_connections_low_name_prefix       | ""       | No       |                                  |
-| active_connections_low_name_suffix       | ""       | No       |                                  |
-| active_connections_low_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
-
-
-## Db Connectivity
-
-Query:
-```terraform
-avg(last_10m):avg:network.tcp.can_connect{tag:xxx} by {host,cluster_name} <= 0.5
-```
-
-| variable                          | default  | required | description                      |
-|-----------------------------------|----------|----------|----------------------------------|
-| db_connectivity_enabled           | True     | No       |                                  |
-| db_connectivity_warning           | None     | No       |                                  |
-| db_connectivity_critical          | 0.5      | No       |                                  |
-| db_connectivity_evaluation_period | last_10m | No       |                                  |
-| db_connectivity_note              | ""       | No       |                                  |
-| db_connectivity_docs              | ""       | No       |                                  |
-| db_connectivity_filter_override   | ""       | No       |                                  |
-| db_connectivity_alerting_enabled  | True     | No       |                                  |
-| db_connectivity_no_data_timeframe | None     | No       |                                  |
-| db_connectivity_notify_no_data    | False    | No       |                                  |
-| db_connectivity_ok_threshold      | None     | No       |                                  |
-| db_connectivity_name_prefix       | ""       | No       |                                  |
-| db_connectivity_name_suffix       | ""       | No       |                                  |
-| db_connectivity_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
-
-
-## Dns Response Time
-
-Query:
-```terraform
-avg(last_5m):avg:dns.response_time{tag:xxx} by {host} > 1
-```
-
-| variable                            | default  | required | description                      |
-|-------------------------------------|----------|----------|----------------------------------|
-| dns_response_time_enabled           | True     | No       |                                  |
-| dns_response_time_warning           | 0.75     | No       |                                  |
-| dns_response_time_critical          | 1        | No       |                                  |
-| dns_response_time_evaluation_period | last_5m  | No       |                                  |
-| dns_response_time_note              | ""       | No       |                                  |
-| dns_response_time_docs              | ""       | No       |                                  |
-| dns_response_time_filter_override   | ""       | No       |                                  |
-| dns_response_time_alerting_enabled  | True     | No       |                                  |
-| dns_response_time_no_data_timeframe | None     | No       |                                  |
-| dns_response_time_notify_no_data    | False    | No       |                                  |
-| dns_response_time_ok_threshold      | None     | No       |                                  |
-| dns_response_time_name_prefix       | ""       | No       |                                  |
-| dns_response_time_name_suffix       | ""       | No       |                                  |
-| dns_response_time_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
+| variable                          | default                                  | required | description  |
+|-----------------------------------|------------------------------------------|----------|--------------|
+| integration_enabled               | True                                     | No       |              |
+| integration_critical              | 1                                        | No       |              |
+| integration_evaluation_period     | last(2)                                  | No       |              |
+| integration_priority              | 2                                        | No       |              |
+| integration_note                  | ""                                       | No       |              |
+| integration_docs                  | Returns CRITICAL if Datadog is unable to connect to the monitored Kong instance(s). Returns OK otherwise. | No       |              |
+| integration_include_tags_override | None                                     | No       |              |
+| integration_exclude_tags_override | None                                     | No       |              |
+| integration_alerting_enabled      | True                                     | No       |              |
 
 
 ## Ntp Drift
@@ -255,45 +325,29 @@ avg(last_15m):abs(avg:ntp.offset{tag:xxx} by {host,cluster_name}) > 30
 | ntp_drift_priority          | 2        | No       | Number from 1 (high) to 5 (low). |
 
 
-## Integration
-
-Returns CRITICAL if Datadog is unable to connect to the monitored Kong instance(s). Returns OK otherwise.
-
-| variable                      | default                                  | required | description  |
-|-------------------------------|------------------------------------------|----------|--------------|
-| integration_enabled           | True                                     | No       |              |
-| integration_critical          | 1                                        | No       |              |
-| integration_evaluation_period | last(2)                                  | No       |              |
-| integration_priority          | 2                                        | No       |              |
-| integration_note              | ""                                       | No       |              |
-| integration_docs              | Returns CRITICAL if Datadog is unable to connect to the monitored Kong instance(s). Returns OK otherwise. | No       |              |
-| integration_filter_override   | ""                                       | No       |              |
-| integration_alerting_enabled  | True                                     | No       |              |
-
-
-## Disk Space
+## Swap Percent Free
 
 Query:
 ```terraform
-avg(${var.disk_free_percent_evaluation_period}):100 * min:system.disk.free{${local.disk_free_percent_filter}} by {host,device} / min:system.disk.total{${local.disk_free_percent_filter}} by {host,device} < ${var.disk_free_percent_critical}
+avg(last_5m):min:system.swap.pct_free{tag:xxx} by {host,cluster_name} * 100 < 10
 ```
 
 | variable                            | default  | required | description                      |
 |-------------------------------------|----------|----------|----------------------------------|
-| disk_free_percent_enabled           | True     | No       |                                  |
-| disk_free_percent_warning           | 20       | No       |                                  |
-| disk_free_percent_critical          | 15       | No       |                                  |
-| disk_free_percent_evaluation_period | last_15m | No       |                                  |
-| disk_free_percent_note              | ""       | No       |                                  |
-| disk_free_percent_docs              | ""       | No       |                                  |
-| disk_free_percent_filter_override   | ""       | No       |                                  |
-| disk_free_percent_alerting_enabled  | True     | No       |                                  |
-| disk_free_percent_no_data_timeframe | None     | No       |                                  |
-| disk_free_percent_notify_no_data    | False    | No       |                                  |
-| disk_free_percent_ok_threshold      | None     | No       |                                  |
-| disk_free_percent_name_prefix       | ""       | No       |                                  |
-| disk_free_percent_name_suffix       | ""       | No       |                                  |
-| disk_free_percent_priority          | 2        | No       | Number from 1 (high) to 5 (low). |
+| swap_percent_free_enabled           | True     | No       |                                  |
+| swap_percent_free_warning           | 25       | No       |                                  |
+| swap_percent_free_critical          | 10       | No       |                                  |
+| swap_percent_free_evaluation_period | last_5m  | No       |                                  |
+| swap_percent_free_note              | ""       | No       |                                  |
+| swap_percent_free_docs              | ""       | No       |                                  |
+| swap_percent_free_filter_override   | ""       | No       |                                  |
+| swap_percent_free_alerting_enabled  | True     | No       |                                  |
+| swap_percent_free_no_data_timeframe | None     | No       |                                  |
+| swap_percent_free_notify_no_data    | False    | No       |                                  |
+| swap_percent_free_ok_threshold      | None     | No       |                                  |
+| swap_percent_free_name_prefix       | ""       | No       |                                  |
+| swap_percent_free_name_suffix       | ""       | No       |                                  |
+| swap_percent_free_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
 
 
 ## System Entropy
@@ -323,56 +377,6 @@ avg(last_15m):min:system.entropy.available{tag:xxx} by {host,cluster_name} < 250
 | system_entropy_priority          | 3                                        | No       | Number from 1 (high) to 5 (low). |
 
 
-## Active Connections High
-
-Query:
-```terraform
-avg(last_10m):sum:kong.connections_active{tag:xxx} by {cluster_name} > 2000
-```
-
-| variable                                  | default  | required | description                      |
-|-------------------------------------------|----------|----------|----------------------------------|
-| active_connections_high_enabled           | True     | No       |                                  |
-| active_connections_high_warning           | 1500     | No       |                                  |
-| active_connections_high_critical          | 2000     | No       |                                  |
-| active_connections_high_evaluation_period | last_10m | No       |                                  |
-| active_connections_high_note              | ""       | No       |                                  |
-| active_connections_high_docs              | ""       | No       |                                  |
-| active_connections_high_filter_override   | ""       | No       |                                  |
-| active_connections_high_alerting_enabled  | True     | No       |                                  |
-| active_connections_high_no_data_timeframe | None     | No       |                                  |
-| active_connections_high_notify_no_data    | False    | No       |                                  |
-| active_connections_high_ok_threshold      | None     | No       |                                  |
-| active_connections_high_name_prefix       | ""       | No       |                                  |
-| active_connections_high_name_suffix       | ""       | No       |                                  |
-| active_connections_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
-
-
-## Connections Waiting High
-
-Query:
-```terraform
-avg(last_10m):sum:kong.connections_waiting{tag:xxx} by {cluster_name} > 1000
-```
-
-| variable                                   | default  | required | description                      |
-|--------------------------------------------|----------|----------|----------------------------------|
-| connections_waiting_high_enabled           | True     | No       |                                  |
-| connections_waiting_high_warning           | 750      | No       |                                  |
-| connections_waiting_high_critical          | 1000     | No       |                                  |
-| connections_waiting_high_evaluation_period | last_10m | No       |                                  |
-| connections_waiting_high_note              | ""       | No       |                                  |
-| connections_waiting_high_docs              | ""       | No       |                                  |
-| connections_waiting_high_filter_override   | ""       | No       |                                  |
-| connections_waiting_high_alerting_enabled  | True     | No       |                                  |
-| connections_waiting_high_no_data_timeframe | None     | No       |                                  |
-| connections_waiting_high_notify_no_data    | False    | No       |                                  |
-| connections_waiting_high_ok_threshold      | None     | No       |                                  |
-| connections_waiting_high_name_prefix       | ""       | No       |                                  |
-| connections_waiting_high_name_suffix       | ""       | No       |                                  |
-| connections_waiting_high_priority          | 3        | No       | Number from 1 (high) to 5 (low). |
-
-
 ## Module Variables
 
 | variable                            | default  | required | description                                                             |
@@ -389,6 +393,7 @@ avg(last_10m):sum:kong.connections_waiting{tag:xxx} by {cluster_name} > 1000
 | service_check_exclude_tags          | []       | No       | Tags to be included in the \"exclude\" section of a service check query |
 | docker_container_monitoring_enabled |          | Yes      |                                                                         |
 | docker_filter_str                   | None     | No       |                                                                         |
-| runs_in_k8s                         |          | Yes      |                                                                         |
+| runs_in_k8s                         |          | Yes      | Determines whether or not we also do group by on cluster_name           |
+| priority_offset                     | 0        | No       | For non production workloads we can +1 on the priorities                |
 
 

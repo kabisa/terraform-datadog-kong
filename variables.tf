@@ -57,5 +57,11 @@ variable "docker_filter_str" {
 }
 
 variable "runs_in_k8s" {
-  type = bool
+  description = "Determines whether or not we also do group by on cluster_name"
+  type        = bool
+}
+
+variable "priority_offset" {
+  description = "For non production workloads we can +1 on the priorities"
+  default     = 0
 }
