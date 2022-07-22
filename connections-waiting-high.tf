@@ -6,7 +6,8 @@ locals {
 }
 
 module "connections_waiting_high" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "Connections Waiting High"
   query = "avg(${var.connections_waiting_high_evaluation_period}):sum:kong.connections_waiting{${local.connections_waiting_high_filter}} by {cluster_name} > ${var.connections_waiting_high_critical}"
@@ -21,7 +22,7 @@ module "connections_waiting_high" {
   alerting_enabled   = var.connections_waiting_high_alerting_enabled
   warning_threshold  = var.connections_waiting_high_warning
   critical_threshold = var.connections_waiting_high_critical
-  priority           = var.connections_waiting_high_priority
+  priority           = min(var.connections_waiting_high_priority + var.priority_offset, 5)
   docs               = var.connections_waiting_high_docs
   note               = var.connections_waiting_high_note
 

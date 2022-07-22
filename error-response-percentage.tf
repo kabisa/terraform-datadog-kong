@@ -8,7 +8,8 @@ locals {
 }
 
 module "error_response_percentage" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "Error response percentage"
   query = "sum(${var.error_response_percentage_evaluation_period}):${local.error_count} * 100 / (${local.success_count} + ${local.error_count} + ${var.error_response_percentage_offset}) > ${var.error_response_percentage_critical}"
@@ -32,7 +33,7 @@ module "error_response_percentage" {
   alerting_enabled   = var.error_response_percentage_alerting_enabled
   warning_threshold  = var.error_response_percentage_warning
   critical_threshold = var.error_response_percentage_critical
-  priority           = var.error_response_percentage_priority
+  priority           = min(var.error_response_percentage_priority + var.priority_offset, 5)
   docs               = var.error_response_percentage_docs
   note               = var.error_response_percentage_note
 }

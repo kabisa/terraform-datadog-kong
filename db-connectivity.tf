@@ -6,7 +6,8 @@ locals {
 }
 
 module "db_connectivity" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "DB Connectivity"
   query = "avg(${var.db_connectivity_evaluation_period}):avg:network.tcp.can_connect{${local.db_connectivity_filter}} by {host,cluster_name} <= ${var.db_connectivity_critical}"
@@ -30,7 +31,7 @@ module "db_connectivity" {
   alerting_enabled   = var.db_connectivity_alerting_enabled
   warning_threshold  = var.db_connectivity_warning
   critical_threshold = var.db_connectivity_critical
-  priority           = var.db_connectivity_priority
+  priority           = min(var.db_connectivity_priority + var.priority_offset, 5)
   docs               = var.db_connectivity_docs
   note               = var.db_connectivity_note
 }

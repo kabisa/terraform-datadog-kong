@@ -28,9 +28,14 @@ variable "integration_docs" {
   default = "Returns CRITICAL if Datadog is unable to connect to the monitored Kong instance(s). Returns OK otherwise."
 }
 
-variable "integration_filter_override" {
-  type    = string
-  default = ""
+variable "integration_include_tags_override" {
+  type    = list(string)
+  default = null
+}
+
+variable "integration_exclude_tags_override" {
+  type    = list(string)
+  default = null
 }
 
 variable "integration_alerting_enabled" {

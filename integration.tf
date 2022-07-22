@@ -1,13 +1,12 @@
 locals {
-  integration_filter = coalesce(
-    var.integration_filter_override,
-    var.filter_str
-  )
+  integration_include_tags = var.integration_include_tags_override != null ? var.integration_include_tags_override : var.service_check_include_tags
+  integration_exclude_tags = var.integration_exclude_tags_override != null ? var.integration_exclude_tags_override : var.service_check_exclude_tags
 }
 
 
 module "integration" {
-  source = "git@github.com:kabisa/terraform-datadog-service-check-monitor.git?ref=1.4.0"
+  source  = "kabisa/service-check-monitor/datadog"
+  version = "2.0.0"
 
   name        = "Status of Kong Cluster Integration"
   metric_name = "kong.can_connect"
@@ -17,14 +16,14 @@ module "integration" {
   alert_message       = "The Kong Cluster Integration is broken / faulty"
   recovery_message    = "The Kong Cluster Integration is functioning correctly"
   by_tags             = ["host"]
-  include_tags        = var.service_check_include_tags
-  exclude_tags        = var.service_check_exclude_tags
+  include_tags        = local.integration_include_tags
+  exclude_tags        = local.integration_exclude_tags
 
   # monitor level vars
   enabled            = var.integration_enabled
   alerting_enabled   = var.integration_alerting_enabled
   critical_threshold = var.integration_critical
-  priority           = var.integration_priority
+  priority           = min(var.integration_priority + var.priority_offset, 5)
   docs               = var.integration_docs
   note               = var.integration_note
 

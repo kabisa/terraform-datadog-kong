@@ -6,7 +6,8 @@ locals {
 }
 
 module "ntp_drift" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "System - NTP Drift"
   query = "avg(${var.ntp_drift_evaluation_period}):abs(avg:ntp.offset{${local.ntp_drift_filter}} by {host,cluster_name}) > ${var.ntp_drift_critical}"
@@ -21,7 +22,7 @@ module "ntp_drift" {
   alerting_enabled   = var.ntp_drift_alerting_enabled
   warning_threshold  = var.ntp_drift_warning
   critical_threshold = var.ntp_drift_critical
-  priority           = var.ntp_drift_priority
+  priority           = min(var.ntp_drift_priority + var.priority_offset, 5)
   docs               = var.ntp_drift_docs
   note               = var.ntp_drift_note
 
