@@ -393,7 +393,7 @@ avg(last_15m):min:system.entropy.available{tag:xxx} by {host,cluster_name} < 250
 | service_check_exclude_tags          | []       | No       | Tags to be included in the \"exclude\" section of a service check query |
 | docker_container_monitoring_enabled |          | Yes      |                                                                         |
 | docker_filter_str                   | None     | No       |                                                                         |
-| runs_in_k8s                         |          | Yes      |                                                                         |
+| runs_in_k8s                         |          | Yes      | Determines whether or not we also do group by on cluster_name           |
 | priority_offset                     | 0        | No       | For non production workloads we can +1 on the priorities                |
 
 
