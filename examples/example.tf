@@ -2,7 +2,7 @@
 module "kong" {
   source = "kabisa/kong/datadog"
 
-  notification_channel = "mail@example.com"
+  notification_channel = "@mail@example.com"
   service              = "Kong"
   env                  = "prd"
   filter_str           = "cluster_name:kong"
