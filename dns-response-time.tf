@@ -6,7 +6,8 @@ locals {
 }
 
 module "dns_response_time" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "DNS response time"
   query = "avg(${var.dns_response_time_evaluation_period}):avg:dns.response_time{${local.dns_response_time_filter}} by {host} > ${var.dns_response_time_critical}"
@@ -30,7 +31,7 @@ module "dns_response_time" {
   alerting_enabled   = var.dns_response_time_alerting_enabled
   warning_threshold  = var.dns_response_time_warning
   critical_threshold = var.dns_response_time_critical
-  priority           = var.dns_response_time_priority
+  priority           = min(var.dns_response_time_priority + var.priority_offset, 5)
   docs               = var.dns_response_time_docs
   note               = var.dns_response_time_note
 }

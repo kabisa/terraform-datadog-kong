@@ -1,3 +1,4 @@
+# tflint-ignore: terraform_module_version
 module "kong" {
   source = "kabisa/kong/datadog"
 

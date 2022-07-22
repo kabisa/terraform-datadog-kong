@@ -6,7 +6,8 @@ locals {
 }
 
 module "system_entropy" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "System - Entropy"
   query = "avg(${var.system_entropy_evaluation_period}):min:system.entropy.available{${local.system_entropy_filter}} by {host,cluster_name} < ${var.system_entropy_critical}"
@@ -21,7 +22,7 @@ module "system_entropy" {
   alerting_enabled   = var.system_entropy_alerting_enabled
   warning_threshold  = var.system_entropy_warning
   critical_threshold = var.system_entropy_critical
-  priority           = var.system_entropy_priority
+  priority           = min(var.system_entropy_priority + var.priority_offset, 5)
   docs               = var.system_entropy_docs
   note               = var.system_entropy_note
 

@@ -6,7 +6,8 @@ locals {
 }
 
 module "active_connections_low" {
-  source = "git@github.com:kabisa/terraform-datadog-generic-monitor.git?ref=0.7.0"
+  source  = "kabisa/generic-monitor/datadog"
+  version = "1.0.0"
 
   name  = "Active Connections Low"
   query = "avg(${var.active_connections_low_evaluation_period}):sum:kong.connections_active{${local.active_connections_low_filter}} by {cluster_name} < ${var.active_connections_low_critical}"
@@ -21,7 +22,7 @@ module "active_connections_low" {
   alerting_enabled   = var.active_connections_low_alerting_enabled
   warning_threshold  = var.active_connections_low_warning
   critical_threshold = var.active_connections_low_critical
-  priority           = var.active_connections_low_priority
+  priority           = min(var.active_connections_low_priority + var.priority_offset, 5)
   docs               = var.active_connections_low_docs
   note               = var.active_connections_low_note
 
